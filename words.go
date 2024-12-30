@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"math/rand"
 	"os"
 )
 
@@ -10,8 +9,9 @@ var dictionary []Word
 
 func init() {
 	var err error
-	dictionary, err = loadWordsFromJSON("words-sample.json")
+	dictionary, err = loadWordsFromJSON("words-example.json")
 	if err != nil {
+		panic(err)
 	}
 }
 
@@ -34,14 +34,4 @@ func loadWordsFromJSON(filePath string) ([]Word, error) {
 		return nil, err
 	}
 	return words, nil
-}
-
-func getRandomWord(dictionary []Word, usedWords map[string]bool) Word {
-	for {
-		idx := rand.Intn(len(dictionary))
-
-		if _, ok := usedWords[dictionary[idx].Text]; !ok {
-			return dictionary[idx]
-		}
-	}
 }
