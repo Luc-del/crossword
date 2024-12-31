@@ -1,6 +1,7 @@
 package main
 
 import (
+	grid2 "crossword/grid"
 	"fmt"
 )
 
@@ -8,15 +9,15 @@ const gridSize = 10
 
 func main() {
 
-	grid := NewGrid()
+	grid := grid2.NewGrid()
 
-	horizontals, verticals, filledGrid := solveCrossword(grid, dictionary)
+	horizontals, verticals, filledGrid := solveCrossword(grid, words)
 
 	fmt.Println("Grille initiale :")
-	printGrid(grid)
+	grid.Print()
 
 	fmt.Println("\nSolution complète :")
-	printGrid(filledGrid)
+	filledGrid.Print()
 
 	fmt.Println("\nDéfinitions horizontales :")
 	for k, def := range horizontals {
