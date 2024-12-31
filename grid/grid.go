@@ -40,7 +40,7 @@ var ExampleGrid = Grid{
 	{EmptyCell, EmptyCell, BlackCell, EmptyCell, EmptyCell, EmptyCell, EmptyCell, EmptyCell, EmptyCell, EmptyCell},
 }
 
-func (g Grid) Clone() [][]rune {
+func (g Grid) Clone() Grid {
 	clone := make([][]rune, len(g))
 	for i := range g {
 		clone[i] = make([]rune, len(g[i]))
@@ -66,28 +66,33 @@ func (g Grid) Height() int {
 	return len(g)
 }
 
-type segment struct {
+type Segment struct {
 	start, length int
 }
 
-//func (g Grid) FindSegments(i int) []segment {
-//	var res []segment
-//	start := -1
-//
-//	for i, char := range g[i] {
-//		if char == '.' {
-//			if start == -1 {
-//				start = i
-//			}
-//		} else {
-//			if start != -1 {
-//				segments = append(segments, struct{ start, length int }{start, i - start})
-//				start = -1
-//			}
-//		}
-//	}
-//	if start != -1 {
-//		segments = append(segments, struct{ start, length int }{start, len(line) - start})
-//	}
-//	return segments
-//}
+func (g Grid) FindLineSegments(line int) []Segment {
+	var res []Segment
+
+	var start int
+	for i, char := range g[line] {
+		if char == EmptyCell {
+			start = i
+			break
+		}
+	}
+
+	for i := start; i < len(g[line]); i++ {
+		if g[line][i] == BlackCell {
+			if l := i - start; l > 1 {
+				res = append(res, Segment{start, i - start})
+			}
+			start = i + 1
+		}
+	}
+
+	if l := g.Width() - start; start < g.Width() && l > 1 {
+		res = append(res, Segment{start, g.Width() - start})
+	}
+
+	return res
+}
