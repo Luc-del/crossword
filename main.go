@@ -1,6 +1,7 @@
 package main
 
 import (
+	"crossword/dictionary"
 	grid2 "crossword/grid"
 	"fmt"
 )
@@ -11,7 +12,7 @@ func main() {
 
 	grid := grid2.NewGrid()
 
-	horizontals, verticals, filledGrid := solveCrossword(grid, words)
+	horizontals, verticals, filledGrid := solveCrossword(grid, dictionary.NewDefault())
 
 	fmt.Println("Grille initiale :")
 	grid.Print()

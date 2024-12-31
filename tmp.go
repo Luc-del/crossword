@@ -1,9 +1,12 @@
 package main
 
-import "crossword/grid"
+import (
+	"crossword/dictionary"
+	"crossword/grid"
+)
 
 // Résolution de la grille
-func solveCrossword(grid grid.Grid, words []Word) (map[int]string, map[int]string, grid.Grid) {
+func solveCrossword(grid grid.Grid, words []dictionary.Word) (map[int]string, map[int]string, grid.Grid) {
 	horizontals := make(map[int]string)
 	verticals := make(map[int]string)
 
