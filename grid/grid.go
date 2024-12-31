@@ -58,6 +58,14 @@ func (g Grid) Print() {
 	}
 }
 
+func (g Grid) Width() int {
+	return len(g[0])
+}
+
+func (g Grid) Height() int {
+	return len(g)
+}
+
 type segment struct {
 	start, length int
 }

@@ -46,7 +46,7 @@ func loadWordsFromJSON(filePath string) (Dictionary, error) {
 	return words, nil
 }
 
-func (d Dictionary) containsMatch(regex string) bool {
+func (d Dictionary) ContainsMatch(regex string) bool {
 	r := regexp.MustCompile(regex)
 	for i := range d {
 		if r.MatchString(d[i]) {

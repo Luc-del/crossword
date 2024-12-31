@@ -11,7 +11,7 @@ func TestBuildConstraint(t *testing.T) {
 	g := grid.ExampleGrid.Clone()
 
 	tester := func(t *testing.T, line, column int, expected string) {
-		assert.Equal(t, expected, buildConstraint(g, '_', line, column))
+		assert.Equal(t, expected, solver{g: g}.buildConstraint('_', line, column))
 	}
 
 	t.Run("bounded by X", func(t *testing.T) {
