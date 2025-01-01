@@ -2,6 +2,7 @@ package dictionary
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"regexp"
 )
@@ -18,7 +19,16 @@ func New(path string) Dictionary {
 }
 
 func NewDefault() Dictionary {
-	d, err := loadWordsFromJSON("words-example.json")
+	d, err := loadWordsFromJSON("dictionary/words-example.json")
+	if err != nil {
+		panic(err)
+	}
+
+	return d
+}
+
+func NewExample() Dictionary {
+	d, err := loadWordsFromJSON("dictionary/words-example.json")
 	if err != nil {
 		panic(err)
 	}
@@ -48,8 +58,10 @@ func loadWordsFromJSON(filePath string) (Dictionary, error) {
 
 func (d Dictionary) ContainsMatch(regex string) bool {
 	r := regexp.MustCompile(regex)
-	for i := range d {
-		if r.MatchString(d[i]) {
+	fmt.Println("searching on regex", r.String())
+	for word := range d {
+		if r.MatchString(word) {
+			fmt.Println("match found", r.String(), word)
 			return true
 		}
 	}

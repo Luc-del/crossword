@@ -3,8 +3,8 @@ package grid
 import "fmt"
 
 const (
-	EmptyCell = '.'
-	BlackCell = 'X'
+	EmptyCell = '_'
+	BlackCell = '#'
 )
 
 type Grid [][]rune

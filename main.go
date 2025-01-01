@@ -2,7 +2,7 @@ package main
 
 import (
 	"crossword/dictionary"
-	grid2 "crossword/grid"
+	"crossword/grid"
 	"fmt"
 )
 
@@ -10,12 +10,12 @@ const gridSize = 10
 
 func main() {
 
-	grid := grid2.NewGrid()
+	g := grid.NewGrid()
 
-	horizontals, verticals, filledGrid := solveCrossword(grid, dictionary.NewDefault())
+	horizontals, verticals, filledGrid := solve(g, dictionary.NewDefault())
 
 	fmt.Println("Grille initiale :")
-	grid.Print()
+	g.Print()
 
 	fmt.Println("\nSolution complète :")
 	filledGrid.Print()
