@@ -1,4 +1,4 @@
-package main
+package solver
 
 import (
 	"crossword/dictionary"
@@ -9,10 +9,20 @@ import (
 	"strings"
 )
 
-func (s solver) solve() (map[int]string, map[int]string, grid.Grid) {
-	//horizontals, verticals := make(map[int]string), make(map[int]string)
-	//filledGrid := grid.Clone()
+type Solver struct {
+	d, filled dictionary.Dictionary
+	g         grid.Grid
+}
 
+func New(d dictionary.Dictionary, g grid.Grid) Solver {
+	return Solver{
+		d:      d,
+		filled: make(dictionary.Dictionary),
+		g:      g,
+	}
+}
+
+func (s Solver) Solve() (Definitions, Definitions, grid.Grid) {
 	// Fill horizontally.
 	for i := 0; i < s.g.Height(); i++ {
 		_ = s.fillLine(i)
@@ -29,39 +39,36 @@ func (s solver) solve() (map[int]string, map[int]string, grid.Grid) {
 					panic("didn't find a match for final holes: " + regex)
 				}
 				s.g.FillColumnSegment(line, j, match)
+				s.filled[match] = s.d[match]
 				s.d.Remove(match)
 			}
 			line += len(word) + 1
 		}
-
 	}
 
-	return nil, nil, s.g.Clone()
-}
-
-type solver struct {
-	g grid.Grid
-	d dictionary.Dictionary
+	h, v := s.extractDefinitions()
+	return h, v, s.g
 }
 
 // TODO handle line not filled
-func (s solver) fillLine(line int) bool {
+func (s Solver) fillLine(line int) bool {
 	var inserted []string
 	for _, seg := range s.g.FindLineSegments(line) {
-		word, ok := s.findCandidate(line, seg.Start, seg.Length)
+		match, ok := s.findCandidate(line, seg.Start, seg.Length)
 		if !ok {
 			panic("not found line " + strconv.Itoa(line))
 		}
-		s.g.FillLineSegment(line, seg.Start, word)
-		s.d.Remove(word)
-		inserted = append(inserted, word)
-		fmt.Println("inserting", word, line, seg.Start)
+		s.g.FillLineSegment(line, seg.Start, match)
+		s.filled[match] = s.d[match]
+		s.d.Remove(match)
+		inserted = append(inserted, match)
+		fmt.Println("inserting", match, line, seg.Start)
 	}
 
 	return true
 }
 
-func (s solver) findCandidate(line, column, length int) (string, bool) {
+func (s Solver) findCandidate(line, column, length int) (string, bool) {
 	for word := range s.d {
 		regex := s.buildLineSegmentConstraint(line, column, length)
 		if !utils.MatchRegex(word, regex) {
@@ -79,7 +86,7 @@ func (s solver) findCandidate(line, column, length int) (string, bool) {
 }
 
 // verifyCandidate checks if a candidate word has matching words on every column.
-func (s solver) verifyCandidate(word string, line, column int) bool {
+func (s Solver) verifyCandidate(word string, line, column int) bool {
 	runed := []rune(word) // take care of multi-character runes
 	for j := column; j < s.g.Width() && s.g[line][j] != grid.BlackCell; j++ {
 		regex := s.buildColumnConstraint(runed[j-column], line, j)
@@ -93,7 +100,7 @@ func (s solver) verifyCandidate(word string, line, column int) bool {
 }
 
 // buildColumnConstraint builds the constraints regex on a column with the candidate letter.
-func (s solver) buildColumnConstraint(letter rune, line, column int) string {
+func (s Solver) buildColumnConstraint(letter rune, line, column int) string {
 	letter = utils.RemoveAccent(letter)
 	regex := string(letter)
 
@@ -125,7 +132,31 @@ func (s solver) buildColumnConstraint(letter rune, line, column int) string {
 	return "^" + regex + "$"
 }
 
-func (s solver) buildLineSegmentConstraint(line, column, length int) string {
+func (s Solver) buildLineSegmentConstraint(line, column, length int) string {
 	filled := s.g[line][column : column+length]
 	return "^" + strings.ReplaceAll(string(filled), string(grid.EmptyCell), ".") + "$"
+}
+
+type Definitions [][]string
+
+func (s Solver) extractDefinitions() (Definitions, Definitions) {
+	h, v := make(Definitions, s.g.Height()), make(Definitions, s.g.Width())
+
+	for i := range s.g {
+		words := strings.Split(string(s.g[i]), string(grid.BlackCell))
+		for k, w := range words {
+			words[k] = s.filled[w]
+		}
+		h[i] = words
+	}
+
+	for j := range s.g[0] {
+		words := strings.Split(string(s.g[j]), string(grid.BlackCell))
+		for k, w := range words {
+			words[k] = s.filled[w]
+		}
+		v[j] = words
+	}
+
+	return h, v
 }

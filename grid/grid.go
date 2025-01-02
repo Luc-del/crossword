@@ -1,8 +1,10 @@
 package grid
 
 import (
+	"crossword/utils"
 	"fmt"
 	"strings"
+	"unicode"
 )
 
 const (
@@ -119,4 +121,14 @@ func (g Grid) WordsInColumn(column int) []string {
 	}
 
 	return strings.Split(string(concat), string(BlackCell))
+}
+
+func (g Grid) Uppercase() Grid {
+	for i := range g {
+		for j := range g[i] {
+			g[i][j] = unicode.ToUpper(utils.RemoveAccent(g[i][j]))
+		}
+	}
+
+	return g
 }
