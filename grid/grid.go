@@ -1,6 +1,9 @@
 package grid
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+)
 
 const (
 	EmptyCell = '_'
@@ -67,7 +70,7 @@ func (g Grid) Height() int {
 }
 
 type Segment struct {
-	start, length int
+	Start, Length int
 }
 
 func (g Grid) FindLineSegments(line int) []Segment {
@@ -95,4 +98,25 @@ func (g Grid) FindLineSegments(line int) []Segment {
 	}
 
 	return res
+}
+
+func (g Grid) FillLineSegment(line, column int, word string) {
+	for j, c := range []rune(word) {
+		g[line][column+j] = c
+	}
+}
+
+func (g Grid) FillColumnSegment(line, column int, word string) {
+	for i, c := range []rune(word) {
+		g[line+i][column] = c
+	}
+}
+
+func (g Grid) WordsInColumn(column int) []string {
+	var concat []rune
+	for i := 0; i < g.Height(); i++ {
+		concat = append(concat, g[i][column])
+	}
+
+	return strings.Split(string(concat), string(BlackCell))
 }

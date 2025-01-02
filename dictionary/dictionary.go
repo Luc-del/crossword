@@ -1,8 +1,8 @@
 package dictionary
 
 import (
+	"crossword/utils"
 	"encoding/json"
-	"fmt"
 	"os"
 	"regexp"
 )
@@ -56,14 +56,12 @@ func loadWordsFromJSON(filePath string) (Dictionary, error) {
 	return words, nil
 }
 
-func (d Dictionary) ContainsMatch(regex string) bool {
+func (d Dictionary) ContainsMatch(regex string) (string, bool) {
 	r := regexp.MustCompile(regex)
-	fmt.Println("searching on regex", r.String())
 	for word := range d {
-		if r.MatchString(word) {
-			fmt.Println("match found", r.String(), word)
-			return true
+		if r.MatchString(utils.RemoveAccentString(word)) {
+			return word, true
 		}
 	}
-	return false
+	return "", false
 }

@@ -8,6 +8,10 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestFindCandidate(t *testing.T) {
+
+}
+
 func TestVerifyCandidate(t *testing.T) {
 	t.Run("empty dictionary", func(t *testing.T) {
 		s := solver{
@@ -49,36 +53,42 @@ func TestVerifyCandidate(t *testing.T) {
 	})
 }
 
-func TestBuildConstraint(t *testing.T) {
+func TestBuildColumnConstraint(t *testing.T) {
 	tester := func(t *testing.T, line, column int, expected string) {
 		g := grid.ExampleGrid.Clone()
-		assert.Equal(t, expected, solver{g: g}.buildConstraint('¤', line, column))
+		assert.Equal(t, expected, solver{g: g}.buildColumnConstraint('¤', line, column))
 	}
 
 	t.Run("bounded by X", func(t *testing.T) {
 		tester(t, 5, 3, "^¤.{2}$")
-		tester(t, 6, 3, "^_¤.{1}$")
-		tester(t, 7, 3, "^__¤$")
+		tester(t, 6, 3, "^.¤.{1}$")
+		tester(t, 7, 3, "^..¤$")
 	})
 
 	t.Run("start of grid", func(t *testing.T) {
 		tester(t, 0, 1, "^¤.{5}$")
-		tester(t, 1, 1, "^_¤.{4}$")
-		tester(t, 5, 1, "^_____¤$")
+		tester(t, 1, 1, "^.¤.{4}$")
+		tester(t, 5, 1, "^.....¤$")
 	})
 
 	t.Run("end of grid", func(t *testing.T) {
-		tester(t, 1, 1, "^_¤.{4}$")
+		tester(t, 1, 1, "^.¤.{4}$")
 	})
 
 	t.Run("start & end of grid", func(t *testing.T) {
 		tester(t, 0, 0, "^¤.{9}$")
-		tester(t, 1, 0, "^_¤.{8}$")
-		tester(t, 9, 0, "^_________¤$")
+		tester(t, 1, 0, "^.¤.{8}$")
+		tester(t, 9, 0, "^.........¤$")
 	})
 
 	t.Run("no constraint on single character", func(t *testing.T) {
 		tester(t, 0, 3, "")
 		tester(t, 9, 4, "")
 	})
+}
+
+func TestBuildLineConstraint(t *testing.T) {
+	s := solver{g: [][]rune{{'_', '_', '_', '#', '_', '_', '_', '_'}}}
+	assert.Equal(t, "^...$", s.buildLineSegmentConstraint(0, 0, 3))
+	assert.Equal(t, "^....$", s.buildLineSegmentConstraint(0, 4, 4))
 }
