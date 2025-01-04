@@ -75,3 +75,45 @@ func TestGrid_FindLineSegments(t *testing.T) {
 			g.FindLineSegments(0))
 	})
 }
+
+func TestPreviousBlackCellInColumn(t *testing.T) {
+	t.Run("no black cell before", func(t *testing.T) {
+		g := Grid([][]rune{{'_'}, {'_'}, {BlackCell}})
+		idx := g.PreviousBlackCellInColumn(1, 0)
+		assert.Equal(t, -1, idx)
+	})
+
+	t.Run("black cell first position", func(t *testing.T) {
+		g := Grid([][]rune{{BlackCell}, {'_'}, {'_'}})
+		idx := g.PreviousBlackCellInColumn(1, 0)
+		assert.Equal(t, 0, idx)
+	})
+
+	t.Run("black cell right before", func(t *testing.T) {
+		g := Grid([][]rune{{'_'}, {BlackCell}, {'_'}})
+		idx := g.PreviousBlackCellInColumn(2, 0)
+		assert.Equal(t, 1, idx)
+	})
+}
+
+func TestWordsInColumn(t *testing.T) {
+	t.Run("no black cell", func(t *testing.T) {
+		g := Grid([][]rune{{'a'}, {'b'}, {'c'}})
+		assert.Equal(t, []string{"abc"}, g.WordsInColumn(0))
+	})
+
+	t.Run("black cell in middle", func(t *testing.T) {
+		g := Grid([][]rune{{'a'}, {BlackCell}, {'c'}})
+		assert.Equal(t, []string{"a", "c"}, g.WordsInColumn(0))
+	})
+
+	t.Run("black cell first", func(t *testing.T) {
+		g := Grid([][]rune{{BlackCell}, {'b'}, {'c'}})
+		assert.Equal(t, []string{"bc"}, g.WordsInColumn(0))
+	})
+
+	t.Run("black cell last", func(t *testing.T) {
+		g := Grid([][]rune{{'a'}, {'b'}, {BlackCell}})
+		assert.Equal(t, []string{"ab"}, g.WordsInColumn(0))
+	})
+}

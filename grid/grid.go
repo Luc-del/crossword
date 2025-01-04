@@ -1,10 +1,8 @@
 package grid
 
 import (
-	"crossword/utils"
 	"fmt"
 	"strings"
-	"unicode"
 )
 
 const (
@@ -54,6 +52,38 @@ func (g Grid) Clone() Grid {
 	return clone
 }
 
+func (g Grid) Display() {
+	maxLineSize := len(fmt.Sprintf("%d", g.Height()))
+	leftPadding := func() { fmt.Print(strings.Repeat(" ", maxLineSize+1)) }
+
+	// Won't go over 100 rows.
+	leftPadding()
+	for i := 1; i <= g.Width(); i++ {
+		if i >= 10 {
+			fmt.Printf("%d ", i/10)
+		} else {
+			fmt.Print("  ")
+		}
+	}
+	fmt.Println()
+
+	leftPadding()
+	for i := 1; i <= g.Width(); i++ {
+		fmt.Printf("%d ", i%10)
+	}
+	fmt.Println()
+
+	for i, row := range g {
+		padding := strings.Repeat(" ", maxLineSize-len(fmt.Sprintf("%d", i+1)))
+		fmt.Printf("%s%d ", padding, i+1)
+
+		for _, char := range row {
+			fmt.Printf("%c ", char)
+		}
+		fmt.Println()
+	}
+}
+
 func (g Grid) Print() {
 	for _, row := range g {
 		for _, char := range row {
@@ -80,7 +110,7 @@ func (g Grid) FindLineSegments(line int) []Segment {
 
 	var start int
 	for i, char := range g[line] {
-		if char == EmptyCell {
+		if char != BlackCell {
 			start = i
 			break
 		}
@@ -114,21 +144,18 @@ func (g Grid) FillColumnSegment(line, column int, word string) {
 	}
 }
 
+func (g Grid) PreviousBlackCellInColumn(line, column int) int {
+	i := line - 1
+	for ; i >= 0 && g[i][column] != BlackCell; i-- {
+	}
+	return i
+}
+
 func (g Grid) WordsInColumn(column int) []string {
 	var concat []rune
 	for i := 0; i < g.Height(); i++ {
 		concat = append(concat, g[i][column])
 	}
 
-	return strings.Split(string(concat), string(BlackCell))
-}
-
-func (g Grid) Uppercase() Grid {
-	for i := range g {
-		for j := range g[i] {
-			g[i][j] = unicode.ToUpper(utils.RemoveAccent(g[i][j]))
-		}
-	}
-
-	return g
+	return strings.Split(strings.Trim(string(concat), string(BlackCell)), string(BlackCell))
 }

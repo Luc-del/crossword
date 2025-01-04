@@ -4,18 +4,25 @@ import (
 	"crossword/dictionary"
 	"crossword/grid"
 	"crossword/solver"
+	"crossword/utils/logger"
 	"fmt"
+	"log/slog"
 	"strings"
 )
 
 func main() {
+	logger.Configure(slog.LevelError)
+
 	g := grid.ExampleGrid.Clone()
-	g.FillLineSegment(4, 4, "neo")
-	g.FillLineSegment(4, 8, "or")
+	g.FillLineSegment(4, 4, "NEO")
+	g.FillLineSegment(4, 8, "OR")
 	d := dictionary.NewExample()
 
 	s := solver.New(d, g)
-	g.Print()
+	g.Display()
+
+	fmt.Println()
+	fmt.Println("----- Definitions -----")
 
 	h, v, solved := s.Solve()
 	fmt.Println("Horizontals:")
@@ -28,5 +35,7 @@ func main() {
 		fmt.Printf("%s: %s\n", string('A'+rune(k)), strings.Join(def, " "))
 	}
 
-	solved.Uppercase().Print()
+	fmt.Println()
+	fmt.Println("----- Solution -----")
+	solved.Display()
 }
