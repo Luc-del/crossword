@@ -47,6 +47,15 @@ func (d *Dictionary) Remove(word string) {
 	delete(*d, word)
 }
 
+func (d *Dictionary) Pop(word string) string {
+	defer delete(*d, word)
+	return (*d)[word]
+}
+
+func (d *Dictionary) Add(word, def string) {
+	(*d)[word] = def
+}
+
 func loadWordsFromJSON(filePath string) (Dictionary, error) {
 	file, err := fs.Open(filePath)
 	if err != nil {

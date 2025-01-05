@@ -6,11 +6,11 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestGrid_FindLineSegments(t *testing.T) {
+func TestFindLineSegments(t *testing.T) {
 	t.Run("single segment", func(t *testing.T) {
 		g := Grid([][]rune{{'_', '_', '_', '_', '_', '_', '_', '_', '_', '_'}})
 		assert.Equal(t, []Segment{
-			{0, 10},
+			{0, 0, 10},
 		},
 			g.FindLineSegments(0))
 	})
@@ -18,20 +18,20 @@ func TestGrid_FindLineSegments(t *testing.T) {
 	t.Run("two Xs in a row shouldn't count as a segment", func(t *testing.T) {
 		g := Grid([][]rune{{'_', '_', '#', '#', '_', '_', '_', '_', '_', '_'}})
 		assert.Equal(t, []Segment{
-			{0, 2},
-			{4, 6},
+			{0, 0, 2},
+			{0, 4, 6},
 		},
 			g.FindLineSegments(0))
 
 		g = [][]rune{{'#', '#', '_', '_', '_', '_', '_', '_'}}
 		assert.Equal(t, []Segment{
-			{2, 6},
+			{0, 2, 6},
 		},
 			g.FindLineSegments(0))
 
 		g = [][]rune{{'_', '_', '#', '#'}}
 		assert.Equal(t, []Segment{
-			{0, 2},
+			{0, 0, 2},
 		},
 			g.FindLineSegments(0))
 	})
@@ -39,20 +39,20 @@ func TestGrid_FindLineSegments(t *testing.T) {
 	t.Run("single letter shouldn't count as a segment", func(t *testing.T) {
 		g := Grid([][]rune{{'_', '_', '_', '#', '_', '#', '_', '_', '_', '_'}})
 		assert.Equal(t, []Segment{
-			{0, 3},
-			{6, 4},
+			{0, 0, 3},
+			{0, 6, 4},
 		},
 			g.FindLineSegments(0))
 
 		g = [][]rune{{'_', '#', '_', '#', '_', '#', '_', '#', '_', '_'}}
 		assert.Equal(t, []Segment{
-			{8, 2},
+			{0, 8, 2},
 		},
 			g.FindLineSegments(0))
 
 		g = [][]rune{{'_', '_', '_', '#', '_', '#', '_', '#', '_'}}
 		assert.Equal(t, []Segment{
-			{0, 3},
+			{0, 0, 3},
 		},
 			g.FindLineSegments(0))
 	})
@@ -60,8 +60,8 @@ func TestGrid_FindLineSegments(t *testing.T) {
 	t.Run("starting by X", func(t *testing.T) {
 		g := Grid([][]rune{{'#', '_', '_', '_', '_', '#', '_', '_', '_', '_'}})
 		assert.Equal(t, []Segment{
-			{1, 4},
-			{6, 4},
+			{0, 1, 4},
+			{0, 6, 4},
 		},
 			g.FindLineSegments(0))
 	})
@@ -69,8 +69,8 @@ func TestGrid_FindLineSegments(t *testing.T) {
 	t.Run("ending by X", func(t *testing.T) {
 		g := Grid([][]rune{{'_', '_', '#', '_', '_', '_', '_', '_', '_', '#'}})
 		assert.Equal(t, []Segment{
-			{0, 2},
-			{3, 6},
+			{0, 0, 2},
+			{0, 3, 6},
 		},
 			g.FindLineSegments(0))
 	})

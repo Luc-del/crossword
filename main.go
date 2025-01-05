@@ -14,17 +14,14 @@ func main() {
 	logger.Configure(slog.LevelError)
 
 	g := grid.ExampleGrid.Clone()
-	g.FillLineSegment(4, 4, "NEO")
-	g.FillLineSegment(4, 8, "OR")
 	d := dictionary.NewExample()
 
-	s := solver.New(d, g)
 	g.Display()
+	h, v, solved := solver.Solve(d, g)
 
 	fmt.Println()
 	fmt.Println("----- Definitions -----")
 
-	h, v, solved := s.Solve()
 	fmt.Println("Horizontals:")
 	for k, def := range h {
 		fmt.Printf("%d: %s\n", k+1, strings.Join(def, " "))

@@ -5,134 +5,167 @@ import (
 	"crossword/grid"
 	"log/slog"
 	"regexp"
-	"strconv"
 	"strings"
 )
 
-type Solver struct {
-	d, filled dictionary.Dictionary
-	g         grid.Grid
+type (
+	Definitions [][]string
+
+	fill func(*state)
+	undo func()
+)
+
+type state struct {
+	d dictionary.Dictionary
+	g grid.Grid
+
+	segments []grid.Segment
+	filled   dictionary.Dictionary
+
+	undo undo
 }
 
-func New(d dictionary.Dictionary, g grid.Grid) Solver {
-	return Solver{
-		d:      d,
-		filled: make(dictionary.Dictionary),
-		g:      g,
+func Solve(d dictionary.Dictionary, g grid.Grid) (Definitions, Definitions, grid.Grid) {
+	root := state{
+		d:        d,
+		g:        g,
+		segments: g.FindAllLineSegments(),
+		filled:   make(dictionary.Dictionary),
+		undo:     func() { slog.Debug("undo to start") },
 	}
-}
 
-func (s *Solver) Solve() (Definitions, Definitions, grid.Grid) {
-	// Fill horizontally.
-	for i := 0; i < s.g.Height(); i++ {
-		_ = s.fillLine(i)
-	}
+	root.solve()
 
 	// Fill holes left
-	for j := 0; j < s.g.Width(); j++ {
+	for j := 0; j < g.Width(); j++ {
 		var line int
-		for _, word := range s.g.WordsInColumn(j) {
+		for _, word := range g.WordsInColumn(j) {
 			switch {
 			case len(word) == 1:
 			// pass
 			case strings.Contains(word, string(grid.EmptyCell)):
 				regex := strings.ReplaceAll(word, string(grid.EmptyCell), ".")
-				match, ok := s.d.ContainsMatch(regex)
+				match, ok := d.ContainsMatch(regex)
 				if !ok {
 					panic("didn't find a match for final holes: " + regex)
 				}
-				s.fillColumnSegment(line, j, match)
+				columnSegmentFiller(line, j, match)(&root)
 			default:
-				if def, ok := s.d[word]; ok {
-					s.filled[word] = def
-					s.d.Remove(word)
+				if def, ok := root.d[word]; ok {
+					root.filled.Add(word, def)
+					root.d.Remove(word)
 				}
 			}
 			line += len(word) + 1
 		}
 	}
 
-	h, v := s.extractDefinitions()
-	return h, v, s.g
+	h, v := root.extractDefinitions()
+
+	return h, v, root.g
 }
 
-type fillAction func()
-
-// TODO handle line not filled
-func (s *Solver) fillLine(line int) bool {
-	for _, seg := range s.g.FindLineSegments(line) {
-		fillers, ok := s.findCandidate(line, seg.Start, seg.Length)
-		if !ok {
-			panic("not found line/column " + strconv.Itoa(line) + " " + strconv.Itoa(seg.Start))
-		}
-
-		for _, f := range fillers {
-			f()
-		}
+func (s *state) mutate(segmentIdx int, word string, fillers []fill) *state {
+	ns := &state{
+		d:        s.d,
+		g:        s.g,
+		segments: s.segments[segmentIdx+1:],
+		filled:   s.filled,
+		undo:     func() {},
 	}
 
-	return true
+	lineSegmentFiller(s.segments[segmentIdx].Line, s.segments[segmentIdx].Start, word)(ns)
+	for _, f := range fillers {
+		f(ns)
+	}
+
+	return ns
 }
 
-func (s Solver) findCandidate(line, column, length int) ([]fillAction, bool) {
-	regex := s.buildLineSegmentConstraint(line, column, length)
-	if regex == "" {
-		// Empty constraint means the line is already filled
-		return nil, true
+func (s *state) solve() bool {
+	if len(s.segments) == 0 {
+		return true
 	}
 
-	matcher := regexp.MustCompile(regex)
-	for word := range s.d {
-		if !matcher.MatchString(word) {
+	for idx, seg := range s.segments {
+		logger := slog.With("line", seg.Line, "column", seg.Start)
+		regex := s.buildLineSegmentConstraint(seg)
+		if regex == "" { // Empty constraint means the segment is already filled
+			logger.Debug("segment skipped")
 			continue
 		}
 
-		slog.Debug("verifying candidate", "word", word)
-		fillers, ok := s.verifyCandidate(word, line, column)
-		if ok {
-			return append(fillers, func() {
-				s.fillLineSegment(line, column, word)
-			}), true
+		logger = logger.With("regex", regex)
+		logger.Debug("looking on segment")
+
+		matcher := regexp.MustCompile(regex)
+		for word := range s.d {
+			if !matcher.MatchString(word) {
+				continue
+			}
+
+			logger := logger.With("word", word)
+			logger.Debug("verifying word")
+			fillers, ok := s.verifyCandidate(word, seg)
+			if !ok {
+				logger.Debug("invalid candidate")
+				continue
+			}
+
+			newState := s.mutate(idx, word, fillers)
+			if newState.solve() {
+				return true
+			}
 		}
+
+		logger.Warn("no candidate, undoing")
+		s.undo()
+		return false
 	}
 
-	// no candidate found
-	return nil, false
+	panic(",ot here")
 }
 
 // verifyCandidate checks if a candidate word has matching words on every column.
-func (s *Solver) verifyCandidate(word string, line, column int) ([]fillAction, bool) {
-	var fillers []fillAction
-	for j := column; j < s.g.Width() && s.g[line][j] != grid.BlackCell; j++ {
-		regex := s.buildColumnConstraint(rune(word[j-column]), line, j)
-		if regex == "" { // no constraint
+func (s *state) verifyCandidate(word string, seg grid.Segment) ([]fill, bool) {
+	var fillers []fill
+	for j := seg.Start; j < seg.Start+seg.Length; j++ {
+		regex := s.buildColumnConstraint(rune(word[j-seg.Start]), seg.Line, j)
+		if regex == "" { // Empty constraint means the column is already filled
 			continue
 		}
 
-		logger := slog.With("regex", regex, "line", line, "column", j)
-		logger.Debug("searching vertically")
+		slog.Debug("searching vertically", "regex", regex, "line", seg.Line, "column", j)
 
 		switch match, count := s.d.ContainsMatchN(regex, 2); count {
 		case 0:
-			logger.Debug("invalid candidate", "word", word)
 			return nil, false
 		case 1:
-			fillers = append(fillers, func() {
-				start := s.g.PreviousBlackCellInColumn(line, j)
-				s.fillColumnSegment(start+1, j, match)
+			fillers = append(fillers, func(newState *state) {
+				start := s.g.PreviousBlackCellInColumn(seg.Line, j)
+				columnSegmentFiller(start+1, j, match)(newState)
 			})
 		}
 	}
 	return fillers, true
 }
 
+func (s *state) buildLineSegmentConstraint(seg grid.Segment) string {
+	filled := s.g[seg.Line][seg.Start : seg.Start+seg.Length]
+	regex := "^" + strings.ReplaceAll(string(filled), string(grid.EmptyCell), ".") + "$"
+	if !strings.Contains(regex, ".") {
+		return ""
+	}
+	return regex
+}
+
 // buildColumnConstraint builds the constraints regex on a column with the candidate letter.
-func (s *Solver) buildColumnConstraint(letter rune, line, column int) string {
+func (s *state) buildColumnConstraint(letter rune, line, column int) string {
 	regex := string(letter)
 
 	// look back first character of word in the column
 	for i := line - 1; i >= 0 && s.g[i][column] != grid.BlackCell; i-- {
-		// As we fill line by line, previous characters are filled.
+		// As we do line by line, previous characters are filled.
 		regex = string(s.g[i][column]) + regex
 	}
 
@@ -141,29 +174,52 @@ func (s *Solver) buildColumnConstraint(letter rune, line, column int) string {
 		regex += string(s.g[i][column])
 	}
 
-	switch {
 	// handle single character: they are not a constraint
-	case regex == string(letter),
-		// handle column already filled
-		!strings.Contains(regex, string(grid.EmptyCell)):
+	// handle column already filled
+	if regex == string(letter) || !strings.Contains(regex, string(grid.EmptyCell)) {
 		return ""
 	}
 
 	return "^" + strings.ReplaceAll(regex, string(grid.EmptyCell), ".") + "$"
 }
 
-func (s *Solver) buildLineSegmentConstraint(line, column, length int) string {
-	filled := s.g[line][column : column+length]
-	regex := "^" + strings.ReplaceAll(string(filled), string(grid.EmptyCell), ".") + "$"
-	if !strings.Contains(regex, ".") {
-		return ""
+func lineSegmentFiller(line, column int, word string) fill {
+	return func(newState *state) {
+		slog.Info("inserting word horizontally", "word", word, "line", line, "column", column)
+		previous := newState.g.FillLineSegment(line, column, word)
+		def := newState.d.Pop(word)
+		newState.filled.Add(word, def)
+
+		undo := newState.undo
+		newState.undo = func() {
+			slog.Info("removing word horizontally", "word", word, "line", line, "column", column)
+			newState.d.Add(word, def)
+			newState.g.FillLineSegment(line, column, previous)
+			newState.filled.Remove(word)
+			undo()
+		}
 	}
-	return regex
 }
 
-type Definitions [][]string
+func columnSegmentFiller(line, column int, word string) fill {
+	return func(newState *state) {
+		slog.Info("inserting word vertically", "word", word, "line", line, "column", column)
+		previous := newState.g.FillColumnSegment(line, column, word)
+		def := newState.d.Pop(word)
+		newState.filled.Add(word, def)
 
-func (s *Solver) extractDefinitions() (Definitions, Definitions) {
+		undo := newState.undo
+		newState.undo = func() {
+			slog.Info("removing word vertically", "word", word, "line", line, "column", column)
+			newState.d.Add(word, def)
+			newState.g.FillColumnSegment(line, column, previous)
+			newState.filled.Remove(word)
+			undo()
+		}
+	}
+}
+
+func (s *state) extractDefinitions() (Definitions, Definitions) {
 	h, v := make(Definitions, s.g.Height()), make(Definitions, s.g.Width())
 
 	for i := range s.g {
@@ -199,18 +255,4 @@ func (s *Solver) extractDefinitions() (Definitions, Definitions) {
 	}
 
 	return h, v
-}
-
-func (s *Solver) fillColumnSegment(line, column int, word string) {
-	slog.Info("inserting word vertically", "word", word, "line", line, "column", column)
-	s.g.FillColumnSegment(line, column, word)
-	s.filled[word] = s.d[word]
-	s.d.Remove(word)
-}
-
-func (s *Solver) fillLineSegment(line, column int, word string) {
-	slog.Info("inserting word horizontally", "word", word, "line", line, "column", column)
-	s.g.FillLineSegment(line, column, word)
-	s.filled[word] = s.d[word]
-	s.d.Remove(word)
 }
