@@ -11,22 +11,13 @@ import (
 	"golang.org/x/text/unicode/norm"
 )
 
-//go:embed *
+//go:embed assets/*.json
 var fs embed.FS
 
 type Dictionary map[string]string // word:definition
 
-func New(path string) Dictionary {
-	d, err := loadWordsFromJSON(path)
-	if err != nil {
-		panic(err)
-	}
-
-	return d
-}
-
-func NewDefault() Dictionary {
-	d, err := loadWordsFromJSON("dictionary/words-example.json")
+func New(fileName string) Dictionary {
+	d, err := loadWordsFromJSON(fileName)
 	if err != nil {
 		panic(err)
 	}
@@ -56,8 +47,8 @@ func (d *Dictionary) Add(word, def string) {
 	(*d)[word] = def
 }
 
-func loadWordsFromJSON(filePath string) (Dictionary, error) {
-	file, err := fs.Open(filePath)
+func loadWordsFromJSON(fileName string) (Dictionary, error) {
+	file, err := fs.Open("assets/" + fileName)
 	if err != nil {
 		return nil, err
 	}
