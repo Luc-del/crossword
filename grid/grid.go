@@ -2,6 +2,8 @@ package grid
 
 import (
 	"fmt"
+	"log/slog"
+	"math/rand/v2"
 	"strings"
 )
 
@@ -12,13 +14,58 @@ const (
 
 type Grid [][]rune
 
-func NewGrid() Grid {
-	// TODO handle size
-	// TODO random X number
-	// TODO random X location
-	return ExampleGrid
+func New(width, height int) Grid {
+	g := newEmpty(width, height)
+	g.drawBlackCells(2, 2)
+	return g
 }
 
+func newEmpty(width, height int) Grid {
+	g := make(Grid, height)
+	for i := range height {
+		g[i] = make([]rune, width)
+		for j := range g[i] {
+			g[i][j] = EmptyCell
+		}
+	}
+	return g
+}
+
+func (g Grid) drawBlackCells(maxLine, maxCol int) {
+	countCol := func(j int) int {
+		var count int
+		for i := range g[j] {
+			if g[i][j] == BlackCell {
+				count++
+			}
+		}
+
+		return count
+	}
+
+	for i := range g.Height() {
+		inLine := rand.IntN(maxLine + 1)
+		slog.Debug("drawing black cells in line", "line", i, "count", inLine)
+		for count := 0; count < inLine; count++ {
+			for _, j := range rand.Perm(g.Width()) {
+				if countCol(j) < maxCol {
+					slog.Debug("marking black cell", "line", i, "column", j)
+					g[i][j] = BlackCell
+					break
+				}
+			}
+		}
+	}
+}
+
+func NewRandom() Grid {
+	randN := func(n int) int {
+		return 6 + rand.IntN(n)
+	}
+	return New(randN(8), randN(8))
+}
+
+// ExampleGrid is the grid for the example in ./example.
 // ..  0    1    2    3    4    5    6    7    8    9
 // A {'.', '.', '.', '.', '.', '.', '.', '.', '.', '.'}, 0
 // B {'.', '.', '.', 'X', '.', '.', '.', '.', '.', '.'}, 1
