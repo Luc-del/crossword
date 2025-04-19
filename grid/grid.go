@@ -234,3 +234,21 @@ func (g Grid) WordsInColumn(column int) []string {
 
 	return strings.Split(strings.Trim(string(concat), string(BlackCell)), string(BlackCell))
 }
+
+func (g Grid) CompletionState() string {
+	all, filled := 0, 0
+	for i := range g.Height() {
+		for j := range g.Width() {
+			switch g[i][j] {
+			case BlackCell:
+				continue
+			case EmptyCell:
+			default:
+				filled++
+			}
+			all++
+		}
+	}
+
+	return fmt.Sprintf("%.2f%%", float64(filled)/float64(all))
+}

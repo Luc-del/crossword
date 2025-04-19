@@ -29,7 +29,7 @@ func main() {
 	}
 
 	outputName := fmt.Sprintf("./dictionary/assets/extracted.%d.json", time.Now().Unix())
-	if err := os.WriteFile(outputName, res, 644); err != nil {
+	if err := os.WriteFile(outputName, res, 0644); err != nil {
 		panic(err)
 	}
 }

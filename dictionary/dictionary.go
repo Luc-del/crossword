@@ -81,7 +81,7 @@ func (d Dictionary) ContainsMatch(regex string) (string, bool) {
 
 // ContainsMatchN finds if there is at least n matches in the Dictionary.
 // It returns a match and the cardinality up to n.
-func (d Dictionary) ContainsMatchN(regex string, n int) (string, int) {
+func (d Dictionary) ContainsMatchN(regex string, atLeast int) (string, int) {
 	r := regexp.MustCompile(regex)
 
 	var (
@@ -92,7 +92,7 @@ func (d Dictionary) ContainsMatchN(regex string, n int) (string, int) {
 		if r.MatchString(word) {
 			count++
 			match = word
-			if count == n {
+			if count == atLeast {
 				return match, count
 			}
 		}

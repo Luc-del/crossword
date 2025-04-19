@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"regexp"
 	"strings"
+	"time"
 )
 
 type (
@@ -26,6 +27,9 @@ type state struct {
 }
 
 func Solve(d dictionary.Dictionary, g grid.Grid) (Definitions, Definitions, grid.Grid) {
+	start := time.Now()
+	defer func() { slog.Info("time monitoring", "elapsed", time.Since(start).String()) }()
+
 	root := state{
 		d:        d,
 		g:        g,
@@ -185,17 +189,17 @@ func (s *state) buildColumnConstraint(letter rune, line, column int) string {
 
 func lineSegmentFiller(line, column int, word string) fill {
 	return func(newState *state) {
-		slog.Info("inserting word horizontally", "word", word, "line", line, "column", column)
 		previous := newState.g.FillLineSegment(line, column, word)
 		def := newState.d.Pop(word)
 		newState.filled.Add(word, def)
+		slog.Info("inserting word horizontally", "word", word, "line", line, "column", column, "completion", newState.g.CompletionState())
 
 		undo := newState.undo
 		newState.undo = func() {
-			slog.Info("removing word horizontally", "word", word, "line", line, "column", column)
 			newState.d.Add(word, def)
 			newState.g.FillLineSegment(line, column, previous)
 			newState.filled.Remove(word)
+			slog.Info("removing word horizontally", "word", word, "line", line, "column", column, "completion", newState.g.CompletionState())
 			undo()
 		}
 	}
@@ -203,17 +207,17 @@ func lineSegmentFiller(line, column int, word string) fill {
 
 func columnSegmentFiller(line, column int, word string) fill {
 	return func(newState *state) {
-		slog.Info("inserting word vertically", "word", word, "line", line, "column", column)
 		previous := newState.g.FillColumnSegment(line, column, word)
 		def := newState.d.Pop(word)
 		newState.filled.Add(word, def)
+		slog.Info("inserting word vertically", "word", word, "line", line, "column", column, "completion", newState.g.CompletionState())
 
 		undo := newState.undo
 		newState.undo = func() {
-			slog.Info("removing word vertically", "word", word, "line", line, "column", column)
 			newState.d.Add(word, def)
 			newState.g.FillColumnSegment(line, column, previous)
 			newState.filled.Remove(word)
+			slog.Info("removing word vertically", "word", word, "line", line, "column", column, "completion", newState.g.CompletionState())
 			undo()
 		}
 	}
