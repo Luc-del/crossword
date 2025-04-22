@@ -15,12 +15,12 @@ const (
 type Grid [][]rune
 
 func New(width, height int) Grid {
-	g := newEmpty(width, height)
+	g := NewEmpty(width, height)
 	g.drawBlackCells(2, 2)
 	return g
 }
 
-func newEmpty(width, height int) Grid {
+func NewEmpty(width, height int) Grid {
 	g := make(Grid, height)
 	for i := range height {
 		g[i] = make([]rune, width)
@@ -198,6 +198,12 @@ func (g Grid) FillLineSegment(line, column int, word string) string {
 	return string(previous)
 }
 
+func (g Grid) EmptyLineSegment(line, column, length int) {
+	for j := range length {
+		g[line][column+j] = EmptyCell
+	}
+}
+
 func (g Grid) UnFillLineSegment(line, column int) {
 	for j := column; j < g.Width() && g[line][j] != BlackCell; j++ {
 		g[line][j] = EmptyCell
@@ -250,5 +256,5 @@ func (g Grid) CompletionState() string {
 		}
 	}
 
-	return fmt.Sprintf("%.2f%%", float64(filled)/float64(all))
+	return fmt.Sprintf("%.0f%%", float64(filled)/float64(all)*100)
 }

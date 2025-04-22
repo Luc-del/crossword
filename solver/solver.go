@@ -17,6 +17,8 @@ type (
 )
 
 type state struct {
+	depth int
+
 	d dictionary.Dictionary
 	g grid.Grid
 
@@ -31,11 +33,12 @@ func Solve(d dictionary.Dictionary, g grid.Grid) (Definitions, Definitions, grid
 	defer func() { slog.Info("time monitoring", "elapsed", time.Since(start).String()) }()
 
 	root := state{
+		depth:    0,
 		d:        d,
 		g:        g,
 		segments: g.FindAllLineSegments(),
 		filled:   make(dictionary.Dictionary),
-		undo:     func() { slog.Debug("undo to start") },
+		undo:     func() { slog.Debug("undone to root") },
 	}
 
 	root.solve()
@@ -71,6 +74,7 @@ func Solve(d dictionary.Dictionary, g grid.Grid) (Definitions, Definitions, grid
 
 func (s *state) mutate(segmentIdx int, word string, fillers []fill) *state {
 	ns := &state{
+		depth:    s.depth + 1,
 		d:        s.d,
 		g:        s.g,
 		segments: s.segments[segmentIdx+1:],
@@ -82,6 +86,7 @@ func (s *state) mutate(segmentIdx int, word string, fillers []fill) *state {
 	for _, f := range fillers {
 		f(ns)
 	}
+	ns.g.Print()
 
 	return ns
 }
@@ -127,7 +132,7 @@ func (s *state) solve() bool {
 		return false
 	}
 
-	panic(",ot here")
+	panic("not here")
 }
 
 // verifyCandidate checks if a candidate word has matching words on every column.
@@ -141,7 +146,7 @@ func (s *state) verifyCandidate(word string, seg grid.Segment) ([]fill, bool) {
 
 		slog.Debug("searching vertically", "regex", regex, "line", seg.Line, "column", j)
 
-		switch match, count := s.d.ContainsMatchN(regex, 2); count {
+		switch match, count := s.d.ContainsMatchN(regex, 2); count { // TODO exclude current word
 		case 0:
 			return nil, false
 		case 1:

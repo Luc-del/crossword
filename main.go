@@ -11,7 +11,7 @@ import (
 )
 
 func main() {
-	logger.Configure(slog.LevelDebug)
+	logger.Configure(slog.LevelWarn)
 
 	g := grid.New(10, 10)
 	d := dictionary.New("words-shortened.json")
