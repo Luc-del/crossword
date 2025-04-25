@@ -9,11 +9,6 @@ import (
 	"time"
 )
 
-const (
-	maxBlackCellLine = 2
-	maxBlackCellCol  = 2
-)
-
 type cursor struct {
 	line, column int
 }

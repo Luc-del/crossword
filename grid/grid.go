@@ -10,13 +10,32 @@ import (
 const (
 	EmptyCell = '_'
 	BlackCell = '#'
+
+	maxBlackCellCol = 2
 )
+
+var probBlackInLine = []float64{0.1, 0.6, 0.29, 0.01}
+
+func weightedChoice() int {
+	choices := []int{0, 1, 2, 3}
+
+	r := rand.Float64()
+	cumulative := 0.0
+	for i, p := range probBlackInLine {
+		cumulative += p
+		if r < cumulative {
+			return choices[i]
+		}
+	}
+
+	return 1
+}
 
 type Grid [][]rune
 
 func New(width, height int) Grid {
 	g := NewEmpty(width, height)
-	g.drawBlackCells(2, 2)
+	g.drawBlackCells(maxBlackCellCol)
 	return g
 }
 
@@ -31,7 +50,7 @@ func NewEmpty(width, height int) Grid {
 	return g
 }
 
-func (g Grid) drawBlackCells(maxLine, maxCol int) {
+func (g Grid) drawBlackCells(maxCol int) {
 	countCol := func(j int) int {
 		var count int
 		for i := range g[j] {
@@ -44,7 +63,7 @@ func (g Grid) drawBlackCells(maxLine, maxCol int) {
 	}
 
 	for i := range g.Height() {
-		inLine := rand.IntN(maxLine + 1)
+		inLine := weightedChoice()
 		slog.Debug("drawing black cells in line", "line", i, "count", inLine)
 		for count := 0; count < inLine; count++ {
 			for _, j := range rand.Perm(g.Width()) {
