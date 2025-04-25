@@ -11,10 +11,10 @@ import (
 )
 
 func main() {
-	logger.Configure(slog.LevelWarn)
+	logger.Configure(slog.LevelInfo)
 
 	g := grid.New(10, 10)
-	d := dictionary.New("words-shortened.json")
+	d := dictionary.NewLengthOrdered("words-shortened.json")
 
 	g.Display()
 	h, v, solved := solver.Solve(d, g)

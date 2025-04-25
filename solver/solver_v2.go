@@ -1,7 +1,6 @@
 package solver
 
 import (
-	"crossword/dictionary"
 	"crossword/grid"
 	"fmt"
 	"log/slog"
@@ -21,27 +20,27 @@ type cursor struct {
 
 type statev2 struct {
 	depth int
-	d     dictionary.Dictionary
+	d     dictionary
 	g     grid.Grid
 
-	c      cursor
-	filled dictionary.Dictionary
+	c         cursor
+	usedWords map[string]string
 
 	undo undo
 }
 
 // SolveFromEmptyGrid finds words and black cells to fit a given grid.
-func SolveFromEmptyGrid(d dictionary.Dictionary, g grid.Grid) (Definitions, Definitions, grid.Grid) {
+func SolveFromEmptyGrid(d dictionary, g grid.Grid) (Definitions, Definitions, grid.Grid) {
 	start := time.Now()
 	defer func() { slog.Info("time monitoring", "elapsed", time.Since(start).String()) }()
 
 	root := statev2{
-		depth:  0,
-		d:      d,
-		g:      g,
-		c:      cursor{line: 0, column: 0},
-		filled: make(dictionary.Dictionary),
-		undo:   func() { slog.Debug("undone to root") },
+		depth:     0,
+		d:         d,
+		g:         g,
+		c:         cursor{line: 0, column: 0},
+		usedWords: make(map[string]string),
+		undo:      func() { slog.Debug("undone to root") },
 	}
 
 	root.solve()
@@ -53,7 +52,7 @@ func (s *statev2) solve() bool {
 	logger := slog.With("line", s.c.line, "column", s.c.column, "depth", s.depth, "completion", s.g.CompletionState())
 
 	switch s.c.column {
-	case s.g.Width(), s.g.Width() - 1: // Line is filled or single character left
+	case s.g.Width(), s.g.Width() - 1: // Line is usedWords or single character left
 		if s.c.line == s.g.Height()-1 {
 			logger.Debug("end of grid reached")
 			return true
@@ -61,12 +60,12 @@ func (s *statev2) solve() bool {
 
 		logger.Debug("going to new line")
 		newState := statev2{
-			depth:  s.depth,
-			d:      s.d,
-			g:      s.g,
-			c:      cursor{line: s.c.line + 1, column: 0},
-			filled: make(dictionary.Dictionary),
-			undo:   func() { slog.Debug("undone to root") },
+			depth:     s.depth,
+			d:         s.d,
+			g:         s.g,
+			c:         cursor{line: s.c.line + 1, column: 0},
+			usedWords: s.usedWords,
+			undo:      func() { slog.Debug("undone to root") },
 		}
 		return newState.solve()
 	}
@@ -76,7 +75,7 @@ func (s *statev2) solve() bool {
 	logger.Debug("looking on segment")
 
 	matcher := regexp.MustCompile(regex)
-	for word := range s.d {
+	for word := range s.d.Registry(regex) {
 		if !matcher.MatchString(word) {
 			continue
 		}
@@ -104,7 +103,7 @@ func (s *statev2) solve() bool {
 func (s *statev2) verifyCandidate(word string) bool {
 	for j := s.c.column; j < s.c.column+len(word); j++ {
 		regex := s.buildColumnConstraint(rune(word[j-s.c.column]), s.c.line, j)
-		if regex == "" { // Empty constraint means the column is already filled
+		if regex == "" { // Empty constraint means the column is already usedWords
 			continue
 		}
 
@@ -127,7 +126,7 @@ func (s *statev2) buildColumnConstraint(letter rune, line, column int) string {
 
 	// look back first character of word in the column
 	for i := line - 1; i >= 0 && s.g[i][column] != grid.BlackCell; i-- {
-		// As we do line by line, previous characters are filled.
+		// As we do line by line, previous characters are usedWords.
 		regex = string(s.g[i][column]) + regex
 	}
 
@@ -143,12 +142,12 @@ func (s *statev2) buildColumnConstraint(letter rune, line, column int) string {
 
 func (s *statev2) mutate(word string) *statev2 {
 	ns := &statev2{
-		depth:  s.depth + 1,
-		d:      s.d,
-		g:      s.g,
-		c:      cursor{line: s.c.line, column: s.c.column + len(word)}, // TODO probability of black cell on the left of the grid
-		filled: s.filled,
-		undo:   func() {},
+		depth:     s.depth + 1,
+		d:         s.d,
+		g:         s.g,
+		c:         cursor{line: s.c.line, column: s.c.column + len(word)}, // TODO probability of black cell on the left of the grid
+		usedWords: s.usedWords,
+		undo:      func() {},
 	}
 
 	ns.g.FillLineSegment(s.c.line, s.c.column, word)
@@ -156,8 +155,8 @@ func (s *statev2) mutate(word string) *statev2 {
 		ns.g[ns.c.line][ns.c.column] = grid.BlackCell
 		ns.c.column++
 	}
-	def := ns.d.Pop(word)
-	ns.filled.Add(word, def)
+	def, _ := ns.d.Pop(word)
+	ns.usedWords[word] = def
 	slog.Info("inserting word horizontally", "word", word, "line", s.c.line, "column", s.c.column, "completion", ns.g.CompletionState())
 	ns.g.Print()
 	time.Sleep(1 * time.Second)
@@ -165,7 +164,7 @@ func (s *statev2) mutate(word string) *statev2 {
 	ns.undo = func() {
 		ns.d.Add(word, def)
 		ns.g.EmptyLineSegment(s.c.line, s.c.column, len(word))
-		ns.filled.Remove(word)
+		delete(ns.usedWords, word)
 		slog.Info("removing word horizontally", "word", word, "line", s.c.line, "column", s.c.column, "completion", ns.g.CompletionState())
 		ns.g.Print()
 		time.Sleep(1 * time.Second)

@@ -34,19 +34,6 @@ func NewExample() Dictionary {
 	return d
 }
 
-func (d *Dictionary) Remove(word string) {
-	delete(*d, word)
-}
-
-func (d *Dictionary) Pop(word string) string {
-	defer delete(*d, word)
-	return (*d)[word]
-}
-
-func (d *Dictionary) Add(word, def string) {
-	(*d)[word] = def
-}
-
 func loadWordsFromJSON(fileName string) (Dictionary, error) {
 	file, err := fs.Open("assets/" + fileName)
 	if err != nil {
@@ -66,6 +53,22 @@ func loadWordsFromJSON(fileName string) (Dictionary, error) {
 	}
 
 	return formatted, nil
+}
+
+func (d *Dictionary) Remove(word string) {
+	delete(*d, word)
+}
+
+func (d *Dictionary) Pop(word string) (string, bool) {
+	w, ok := (*d)[word]
+	if ok {
+		delete(*d, word)
+	}
+	return w, ok
+}
+
+func (d *Dictionary) Add(word, def string) {
+	(*d)[word] = def
 }
 
 // ContainsMatch finds a match in the Dictionary.
@@ -98,6 +101,10 @@ func (d Dictionary) ContainsMatchN(regex string, atLeast int) (string, int) {
 		}
 	}
 	return match, count
+}
+
+func (d Dictionary) Registry(string) map[string]string {
+	return d
 }
 
 func removeAccentString(s string) string {
