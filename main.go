@@ -14,10 +14,15 @@ func main() {
 	logger.Configure(slog.LevelInfo)
 
 	g := grid.New(10, 10)
+	initial := g.Clone()
 	d := dictionary.NewLengthOrdered("words-shortened.json")
 
 	g.Display()
 	h, v, solved := v3.Solve(d, g)
+
+	fmt.Println()
+	fmt.Println("----- Initial -----")
+	initial.Display()
 
 	fmt.Println()
 	fmt.Println("----- Definitions -----")

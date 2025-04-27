@@ -4,10 +4,13 @@ package v3
 import (
 	"crossword/grid"
 	"crossword/matcher"
+	"crossword/printer"
 	"log/slog"
 	"strings"
 	"time"
 )
+
+var gridPrinter = printer.New(100)
 
 type dictionary interface {
 	Remove(string)
@@ -96,8 +99,7 @@ func (s *state) mutate(segmentIdx int, word string, fillers []fill) *state {
 		f(ns)
 	}
 
-	ns.g.Print()
-	slog.Info("new state", "completion", ns.g.CompletionState())
+	gridPrinter.Print(slog.Default(), "new state", ns.g)
 
 	return ns
 }
@@ -115,7 +117,7 @@ func (s *state) solve() bool {
 			continue
 		}
 
-		logger = logger.With("pattern", pattern)
+		logger = logger.With("pattern", string(pattern))
 		logger.Debug("looking on segment")
 
 		for word := range s.d.Registry(len(pattern)) {
@@ -139,8 +141,8 @@ func (s *state) solve() bool {
 
 		logger.Debug("no candidate, undoing")
 		s.undo()
-		s.g.Print()
-		logger.Info("new state after undo", "completion", s.g.CompletionState())
+		gridPrinter.Print(slog.Default(), "new state after undo", s.g)
+
 		return false
 	}
 
