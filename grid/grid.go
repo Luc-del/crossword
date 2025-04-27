@@ -84,31 +84,6 @@ func NewRandom() Grid {
 	return New(randN(8), randN(8))
 }
 
-// ExampleGrid is the grid for the example in ./example.
-// ..  0    1    2    3    4    5    6    7    8    9
-// A {'.', '.', '.', '.', '.', '.', '.', '.', '.', '.'}, 0
-// B {'.', '.', '.', 'X', '.', '.', '.', '.', '.', '.'}, 1
-// C {'.', '.', 'X', '.', '.', '.', '.', '.', 'X', '.'}, 2
-// D {'.', '.', '.', '.', '.', '.', 'X', '.', '.', 'X'}, 3
-// E {'.', '.', '.', 'X', '.', '.', '.', 'X', '.', '.'}, 4
-// F {'.', '.', '.', '.', '.', 'X', '.', '.', '.', '.'}, 5
-// G {'.', 'X', '.', '.', 'X', '.', '.', '.', '.', '.'}, 6
-// H {'.', '.', '.', '.', '.', '.', 'X', '.', '.', 'X'}, 7
-// I {'.', '.', '.', 'X', 'X', '.', '.', '.', '.', '.'}, 8
-// J {'.', '.', 'X', '.', '.', '.', '.', '.', '.', '.'}, 9
-var ExampleGrid = Grid{
-	{EmptyCell, EmptyCell, EmptyCell, EmptyCell, EmptyCell, EmptyCell, EmptyCell, EmptyCell, EmptyCell, EmptyCell},
-	{EmptyCell, EmptyCell, EmptyCell, BlackCell, EmptyCell, EmptyCell, EmptyCell, EmptyCell, EmptyCell, EmptyCell},
-	{EmptyCell, EmptyCell, BlackCell, EmptyCell, EmptyCell, EmptyCell, EmptyCell, EmptyCell, BlackCell, EmptyCell},
-	{EmptyCell, EmptyCell, EmptyCell, EmptyCell, EmptyCell, EmptyCell, BlackCell, EmptyCell, EmptyCell, BlackCell},
-	{EmptyCell, EmptyCell, EmptyCell, BlackCell, EmptyCell, EmptyCell, EmptyCell, BlackCell, EmptyCell, EmptyCell},
-	{EmptyCell, EmptyCell, EmptyCell, EmptyCell, EmptyCell, BlackCell, EmptyCell, EmptyCell, EmptyCell, EmptyCell},
-	{EmptyCell, BlackCell, EmptyCell, EmptyCell, BlackCell, EmptyCell, EmptyCell, EmptyCell, EmptyCell, EmptyCell},
-	{EmptyCell, EmptyCell, EmptyCell, EmptyCell, EmptyCell, EmptyCell, BlackCell, EmptyCell, EmptyCell, BlackCell},
-	{EmptyCell, EmptyCell, EmptyCell, BlackCell, BlackCell, EmptyCell, EmptyCell, EmptyCell, EmptyCell, EmptyCell},
-	{EmptyCell, EmptyCell, BlackCell, EmptyCell, EmptyCell, EmptyCell, EmptyCell, EmptyCell, EmptyCell, EmptyCell},
-}
-
 func (g Grid) Clone() Grid {
 	clone := make([][]rune, len(g))
 	for i := range g {

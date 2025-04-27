@@ -17,7 +17,7 @@ var fs embed.FS
 type Dictionary map[string]string // word:definition
 
 func New(fileName string) Dictionary {
-	d, err := loadWordsFromJSON(fileName)
+	d, err := LoadWordsFromJSON(fileName)
 	if err != nil {
 		panic(err)
 	}
@@ -25,16 +25,7 @@ func New(fileName string) Dictionary {
 	return d
 }
 
-func NewExample() Dictionary {
-	d, err := loadWordsFromJSON("words-example.json")
-	if err != nil {
-		panic(err)
-	}
-
-	return d
-}
-
-func loadWordsFromJSON(fileName string) (Dictionary, error) {
+func LoadWordsFromJSON(fileName string) (Dictionary, error) {
 	file, err := fs.Open("assets/" + fileName)
 	if err != nil {
 		return nil, err

@@ -1,7 +1,9 @@
-package solver
+// Package v2 solver solves a n empty grid by finding words and adding black cells at the end.
+package v2
 
 import (
 	"crossword/grid"
+	"crossword/solver/v1"
 	"fmt"
 	"log/slog"
 	"regexp"
@@ -9,13 +11,26 @@ import (
 	"time"
 )
 
-type cursor struct {
-	line, column int
+type dictionaryv2 interface {
+	Remove(string)
+	Pop(string) (string, bool)
+	Add(word, def string)
+	ContainsMatch(regex string) (string, bool)
+	ContainsMatchN(regex string, atLeast int) (string, int)
+	Registry(regex string) map[string]string
 }
+
+type (
+	undo func()
+
+	cursor struct {
+		line, column int
+	}
+)
 
 type statev2 struct {
 	depth int
-	d     dictionary
+	d     dictionaryv2
 	g     grid.Grid
 
 	c         cursor
@@ -25,7 +40,7 @@ type statev2 struct {
 }
 
 // SolveFromEmptyGrid finds words and black cells to fit a given grid.
-func SolveFromEmptyGrid(d dictionary, g grid.Grid) (Definitions, Definitions, grid.Grid) {
+func SolveFromEmptyGrid(d dictionaryv2, g grid.Grid) (v1.Definitions, v1.Definitions, grid.Grid) {
 	start := time.Now()
 	defer func() { slog.Info("time monitoring", "elapsed", time.Since(start).String()) }()
 
@@ -40,7 +55,7 @@ func SolveFromEmptyGrid(d dictionary, g grid.Grid) (Definitions, Definitions, gr
 
 	root.solve()
 
-	return Definitions{}, Definitions{}, root.g
+	return v1.Definitions{}, v1.Definitions{}, root.g
 }
 
 func (s *statev2) solve() bool {

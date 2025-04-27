@@ -1,4 +1,5 @@
-package solver
+// Package v1 solver solves a grid with placed back cells by iterating on segments.
+package v1
 
 import (
 	"crossword/grid"
@@ -227,7 +228,7 @@ func columnSegmentFiller(line, column int, word string) fill {
 		previous := newState.g.FillColumnSegment(line, column, word)
 		def, _ := newState.d.Pop(word)
 		newState.usedWords[word] = def
-		slog.Debug("inserting word vertically", "word", word, "line", line, "column", column, "completion")
+		slog.Debug("inserting word vertically", "word", word, "line", line, "column", column)
 
 		undo := newState.undo
 		newState.undo = func() {

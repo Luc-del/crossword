@@ -1,11 +1,14 @@
 package dictionary
 
-import "regexp"
+import (
+	"crossword/grid"
+	"regexp"
+)
 
 type LengthOrdered map[int]map[string]string
 
 func NewLengthOrdered(fileName string) LengthOrdered {
-	d, err := loadWordsFromJSON(fileName)
+	d, err := LoadWordsFromJSON(fileName)
 	if err != nil {
 		panic(err)
 	}
@@ -59,6 +62,32 @@ func (d LengthOrdered) ContainsMatchN(regex string, atLeast int) (string, int) {
 	)
 	for word := range d[length] {
 		if r.MatchString(word) {
+			count++
+			match = word
+			if count == atLeast {
+				return match, count
+			}
+		}
+	}
+	return match, count
+}
+
+func matchPattern(word string, pattern []rune) bool {
+	for i, r := range pattern {
+		if r != grid.EmptyCell && rune(word[i]) != r {
+			return false
+		}
+	}
+	return true
+}
+
+func (d LengthOrdered) ContainsPatternN(pattern []rune, atLeast int) (string, int) {
+	var (
+		count int
+		match string
+	)
+	for word := range d[len(pattern)] {
+		if matchPattern(word, pattern) {
 			count++
 			match = word
 			if count == atLeast {
