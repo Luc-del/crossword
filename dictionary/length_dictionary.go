@@ -1,7 +1,7 @@
 package dictionary
 
 import (
-	"crossword/grid"
+	"crossword/matcher"
 	"regexp"
 )
 
@@ -72,22 +72,13 @@ func (d LengthOrdered) ContainsMatchN(regex string, atLeast int) (string, int) {
 	return match, count
 }
 
-func matchPattern(word string, pattern []rune) bool {
-	for i, r := range pattern {
-		if r != grid.EmptyCell && rune(word[i]) != r {
-			return false
-		}
-	}
-	return true
-}
-
 func (d LengthOrdered) ContainsPatternN(pattern []rune, atLeast int) (string, int) {
 	var (
 		count int
 		match string
 	)
 	for word := range d[len(pattern)] {
-		if matchPattern(word, pattern) {
+		if matcher.Pattern(word, pattern) {
 			count++
 			match = word
 			if count == atLeast {
@@ -98,6 +89,6 @@ func (d LengthOrdered) ContainsPatternN(pattern []rune, atLeast int) (string, in
 	return match, count
 }
 
-func (d LengthOrdered) Registry(regex string) map[string]string {
-	return d[len(regex)-2]
+func (d LengthOrdered) Registry(length int) map[string]string {
+	return d[length]
 }

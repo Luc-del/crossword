@@ -3,7 +3,7 @@ package main
 import (
 	"crossword/dictionary"
 	"crossword/grid"
-	"crossword/solver/v1"
+	v3 "crossword/solver/v3"
 	"crossword/utils/logger"
 	"fmt"
 	"log/slog"
@@ -17,7 +17,7 @@ func main() {
 	d := dictionary.NewLengthOrdered("words-shortened.json")
 
 	g.Display()
-	h, v, solved := v1.Solve(d, g)
+	h, v, solved := v3.Solve(d, g)
 
 	fmt.Println()
 	fmt.Println("----- Definitions -----")

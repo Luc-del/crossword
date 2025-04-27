@@ -1,10 +1,10 @@
-// Package v1 solver solves a grid with placed back cells by iterating on line segments searching on regex.
-package v1
+// Package v3 solves a grid by iterating on line segments searching by pattern.
+package v3
 
 import (
 	"crossword/grid"
+	"crossword/matcher"
 	"log/slog"
-	"regexp"
 	"strings"
 	"time"
 )
@@ -14,7 +14,7 @@ type dictionary interface {
 	Pop(string) (string, bool)
 	Add(word, def string)
 	ContainsMatch(regex string) (string, bool)
-	ContainsMatchN(regex string, atLeast int) (string, int)
+	ContainsPatternN(pattern []rune, atLeast int) (string, int)
 	Registry(length int) map[string]string
 }
 
@@ -109,18 +109,17 @@ func (s *state) solve() bool {
 
 	for idx, seg := range s.segments {
 		logger := slog.With("line", seg.Line, "column", seg.Start)
-		regex := s.buildLineSegmentConstraint(seg)
-		if regex == "" { // Empty constraint means the segment is already usedWords
+		pattern := s.buildLineSegmentConstraint(seg)
+		if !strings.Contains(string(pattern), string(grid.EmptyCell)) { // Line is already filled
 			logger.Debug("segment skipped")
 			continue
 		}
 
-		logger = logger.With("regex", regex)
+		logger = logger.With("pattern", pattern)
 		logger.Debug("looking on segment")
 
-		matcher := regexp.MustCompile(regex)
-		for word := range s.d.Registry(len(regex) - 2) {
-			if !matcher.MatchString(word) {
+		for word := range s.d.Registry(len(pattern)) {
+			if !matcher.Pattern(word, pattern) {
 				continue
 			}
 
@@ -152,14 +151,16 @@ func (s *state) solve() bool {
 func (s *state) verifyCandidate(word string, seg grid.Segment) ([]fill, bool) {
 	var fillers []fill
 	for j := seg.Start; j < seg.Start+seg.Length; j++ {
-		regex := s.buildColumnConstraint(rune(word[j-seg.Start]), seg.Line, j)
-		if regex == "" { // Empty constraint means the column is already usedWords
+		pattern := s.findColumnConstraint(rune(word[j-seg.Start]), seg.Line, j)
+		// handle single character: they are not a constraint
+		// handle column already filled
+		if len(pattern) == 1 || !strings.Contains(string(pattern), string(grid.EmptyCell)) {
 			continue
 		}
 
-		slog.Debug("searching vertically", "regex", regex, "line", seg.Line, "column", j)
+		slog.Debug("searching vertically", "pattern", string(pattern), "line", seg.Line, "column", j)
 
-		switch match, count := s.d.ContainsMatchN(regex, 2); count { // TODO exclude current word
+		switch match, count := s.d.ContainsPatternN(pattern, 2); count { // TODO exclude current word
 		case 0:
 			return nil, false
 		case 1:
@@ -172,37 +173,25 @@ func (s *state) verifyCandidate(word string, seg grid.Segment) ([]fill, bool) {
 	return fillers, true
 }
 
-func (s *state) buildLineSegmentConstraint(seg grid.Segment) string {
-	filled := s.g[seg.Line][seg.Start : seg.Start+seg.Length]
-	regex := "^" + strings.ReplaceAll(string(filled), string(grid.EmptyCell), ".") + "$"
-	if !strings.Contains(regex, ".") {
-		return ""
-	}
-	return regex
+func (s *state) buildLineSegmentConstraint(seg grid.Segment) []rune {
+	return s.g[seg.Line][seg.Start : seg.Start+seg.Length]
 }
 
-// buildColumnConstraint builds the constraints regex on a column with the candidate letter.
-func (s *state) buildColumnConstraint(letter rune, line, column int) string {
-	regex := string(letter)
+func (s *state) findColumnConstraint(letter rune, line, column int) []rune {
+	pattern := []rune{letter}
 
 	// look back first character of word in the column
 	for i := line - 1; i >= 0 && s.g[i][column] != grid.BlackCell; i-- {
 		// As we do line by line, previous characters are usedWords.
-		regex = string(s.g[i][column]) + regex
+		pattern = append([]rune{s.g[i][column]}, pattern...)
 	}
 
 	// look up last characters of word in the column
 	for i := line + 1; i < s.g.Height() && s.g[i][column] != grid.BlackCell; i++ {
-		regex += string(s.g[i][column])
+		pattern = append(pattern, s.g[i][column])
 	}
 
-	// handle single character: they are not a constraint
-	// handle column already usedWords
-	if regex == string(letter) || !strings.Contains(regex, string(grid.EmptyCell)) {
-		return ""
-	}
-
-	return "^" + strings.ReplaceAll(regex, string(grid.EmptyCell), ".") + "$"
+	return pattern
 }
 
 func lineSegmentFiller(line, column int, word string) fill {

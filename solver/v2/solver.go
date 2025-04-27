@@ -11,7 +11,7 @@ import (
 	"time"
 )
 
-type dictionaryv2 interface {
+type dictionary interface {
 	Remove(string)
 	Pop(string) (string, bool)
 	Add(word, def string)
@@ -30,7 +30,7 @@ type (
 
 type statev2 struct {
 	depth int
-	d     dictionaryv2
+	d     dictionary
 	g     grid.Grid
 
 	c         cursor
@@ -40,7 +40,7 @@ type statev2 struct {
 }
 
 // SolveFromEmptyGrid finds words and black cells to fit a given grid.
-func SolveFromEmptyGrid(d dictionaryv2, g grid.Grid) (v1.Definitions, v1.Definitions, grid.Grid) {
+func SolveFromEmptyGrid(d dictionary, g grid.Grid) (v1.Definitions, v1.Definitions, grid.Grid) {
 	start := time.Now()
 	defer func() { slog.Info("time monitoring", "elapsed", time.Since(start).String()) }()
 
