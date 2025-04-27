@@ -235,6 +235,22 @@ func (g Grid) WordsInColumn(column int) []string {
 	return strings.Split(strings.Trim(string(concat), string(BlackCell)), string(BlackCell))
 }
 
+func (g Grid) WordsInLine(line int) []string {
+	return strings.Split(string(g[line]), string(BlackCell))
+}
+
+func (g Grid) BlackCellPositions() map[[2]int]bool {
+	res := make(map[[2]int]bool)
+	for i := range g.Height() {
+		for j := range g.Width() {
+			if g[i][j] == BlackCell {
+				res[[2]int{i, j}] = true
+			}
+		}
+	}
+	return res
+}
+
 func (g Grid) CompletionState() string {
 	all, filled := 0, 0
 	for i := range g.Height() {
