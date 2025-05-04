@@ -15,7 +15,7 @@ func main() {
 
 	g := grid.New(10, 10)
 	initial := g.Clone()
-	d := dictionary.NewLengthOrdered("words-shortened.json")
+	d := dictionary.NewLengthOrdered("frequenced.json")
 
 	g.Display()
 	h, v, solved := v3.Solve(d, g)
