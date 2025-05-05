@@ -40,6 +40,11 @@ type state struct {
 	undo undo
 }
 
+var (
+	doCount   int
+	undoCount int
+)
+
 func Solve(d dictionary, g grid.Grid) (Definitions, Definitions, grid.Grid) {
 	start := time.Now()
 	defer func() { slog.Info("time monitoring", "elapsed", time.Since(start).String()) }()
@@ -99,7 +104,8 @@ func (s *state) mutate(segmentIdx int, word string, fillers []fill) *state {
 		f(ns)
 	}
 
-	gridPrinter.Print(slog.Default(), "new state", ns.g)
+	doCount++
+	gridPrinter.Print(slog.Default().With("do", doCount, "undo", undoCount), "new state", ns.g)
 
 	return ns
 }
@@ -141,7 +147,8 @@ func (s *state) solve() bool {
 
 		logger.Debug("no candidate, undoing")
 		s.undo()
-		gridPrinter.Print(slog.Default(), "new state after undo", s.g)
+		undoCount++
+		gridPrinter.Print(slog.Default().With("do", doCount, "undo", undoCount), "new state after undo", s.g)
 
 		return false
 	}
