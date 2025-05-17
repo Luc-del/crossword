@@ -91,7 +91,7 @@ func (s *state) mutate(segmentIdx int, word string, fillers []fill) *state {
 		undo:      func() {},
 	}
 
-	lineSegmentFiller(s.segments[segmentIdx].Line, s.segments[segmentIdx].Start, word)(ns)
+	lineSegmentFiller(s.segments[segmentIdx].Position, s.segments[segmentIdx].Start, word)(ns)
 	for _, f := range fillers {
 		f(ns)
 	}
@@ -108,7 +108,7 @@ func (s *state) solve() bool {
 	}
 
 	for idx, seg := range s.segments {
-		logger := slog.With("line", seg.Line, "column", seg.Start)
+		logger := slog.With("line", seg.Position, "column", seg.Start)
 		regex := s.buildLineSegmentConstraint(seg)
 		if regex == "" { // Empty constraint means the segment is already usedWords
 			logger.Debug("segment skipped")
@@ -152,19 +152,19 @@ func (s *state) solve() bool {
 func (s *state) verifyCandidate(word string, seg grid.Segment) ([]fill, bool) {
 	var fillers []fill
 	for j := seg.Start; j < seg.Start+seg.Length; j++ {
-		regex := s.buildColumnConstraint(rune(word[j-seg.Start]), seg.Line, j)
+		regex := s.buildColumnConstraint(rune(word[j-seg.Start]), seg.Position, j)
 		if regex == "" { // Empty constraint means the column is already usedWords
 			continue
 		}
 
-		slog.Debug("searching vertically", "regex", regex, "line", seg.Line, "column", j)
+		slog.Debug("searching vertically", "regex", regex, "line", seg.Position, "column", j)
 
 		switch match, count := s.d.ContainsMatchN(regex, 2); count { // TODO exclude current word
 		case 0:
 			return nil, false
 		case 1:
 			fillers = append(fillers, func(newState *state) {
-				start := s.g.PreviousBlackCellInColumn(seg.Line, j)
+				start := s.g.PreviousBlackCellInColumn(seg.Position, j)
 				columnSegmentFiller(start+1, j, match)(newState)
 			})
 		}
@@ -173,7 +173,7 @@ func (s *state) verifyCandidate(word string, seg grid.Segment) ([]fill, bool) {
 }
 
 func (s *state) buildLineSegmentConstraint(seg grid.Segment) string {
-	filled := s.g[seg.Line][seg.Start : seg.Start+seg.Length]
+	filled := s.g[seg.Position][seg.Start : seg.Start+seg.Length]
 	regex := "^" + strings.ReplaceAll(string(filled), string(grid.EmptyCell), ".") + "$"
 	if !strings.Contains(regex, ".") {
 		return ""

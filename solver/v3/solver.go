@@ -10,7 +10,12 @@ import (
 	"time"
 )
 
-var gridPrinter = printer.New(100)
+var (
+	gridPrinter = printer.New(500)
+
+	doCount   int
+	undoCount int
+)
 
 type dictionary interface {
 	Remove(string)
@@ -39,11 +44,6 @@ type state struct {
 
 	undo undo
 }
-
-var (
-	doCount   int
-	undoCount int
-)
 
 func Solve(d dictionary, g grid.Grid) (Definitions, Definitions, grid.Grid) {
 	start := time.Now()
@@ -99,7 +99,7 @@ func (s *state) mutate(segmentIdx int, word string, fillers []fill) *state {
 		undo:      func() {},
 	}
 
-	lineSegmentFiller(s.segments[segmentIdx].Line, s.segments[segmentIdx].Start, word)(ns)
+	lineSegmentFiller(s.segments[segmentIdx].Position, s.segments[segmentIdx].Start, word)(ns)
 	for _, f := range fillers {
 		f(ns)
 	}
@@ -116,7 +116,7 @@ func (s *state) solve() bool {
 	}
 
 	for idx, seg := range s.segments {
-		logger := slog.With("line", seg.Line, "column", seg.Start)
+		logger := slog.With("line", seg.Position, "column", seg.Start)
 		pattern := s.buildLineSegmentConstraint(seg)
 		if !strings.Contains(string(pattern), string(grid.EmptyCell)) { // Line is already filled
 			logger.Debug("segment skipped")
@@ -160,21 +160,21 @@ func (s *state) solve() bool {
 func (s *state) verifyCandidate(word string, seg grid.Segment) ([]fill, bool) {
 	var fillers []fill
 	for j := seg.Start; j < seg.Start+seg.Length; j++ {
-		pattern := s.findColumnConstraint(rune(word[j-seg.Start]), seg.Line, j)
+		pattern := s.findColumnConstraint(rune(word[j-seg.Start]), seg.Position, j)
 		// handle single character: they are not a constraint
 		// handle column already filled
 		if len(pattern) == 1 || !strings.Contains(string(pattern), string(grid.EmptyCell)) {
 			continue
 		}
 
-		slog.Debug("searching vertically", "pattern", string(pattern), "line", seg.Line, "column", j)
+		slog.Debug("searching vertically", "pattern", string(pattern), "line", seg.Position, "column", j)
 
 		switch match, count := s.d.ContainsPatternN(pattern, 2); count { // TODO exclude current word
 		case 0:
 			return nil, false
 		case 1:
 			fillers = append(fillers, func(newState *state) {
-				start := s.g.PreviousBlackCellInColumn(seg.Line, j)
+				start := s.g.PreviousBlackCellInColumn(seg.Position, j)
 				columnSegmentFiller(start+1, j, match)(newState)
 			})
 		}
@@ -183,7 +183,7 @@ func (s *state) verifyCandidate(word string, seg grid.Segment) ([]fill, bool) {
 }
 
 func (s *state) buildLineSegmentConstraint(seg grid.Segment) []rune {
-	return s.g[seg.Line][seg.Start : seg.Start+seg.Length]
+	return s.g[seg.Position][seg.Start : seg.Start+seg.Length]
 }
 
 func (s *state) findColumnConstraint(letter rune, line, column int) []rune {
