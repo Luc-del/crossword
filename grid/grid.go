@@ -143,7 +143,7 @@ func (g Grid) Height() int {
 }
 
 type Segment struct {
-	Line, Start, Length int
+	Position, Start, Length int
 }
 
 func (g Grid) FindLineSegments(line int) []Segment {
@@ -192,16 +192,52 @@ func (g Grid) FillLineSegment(line, column int, word string) string {
 	return string(previous)
 }
 
+func (g Grid) UnFillLineSegment(line, column int) {
+	for j := column; j < g.Width() && g[line][j] != BlackCell; j++ {
+		g[line][j] = EmptyCell
+	}
+}
+
 func (g Grid) EmptyLineSegment(line, column, length int) {
 	for j := range length {
 		g[line][column+j] = EmptyCell
 	}
 }
 
-func (g Grid) UnFillLineSegment(line, column int) {
-	for j := column; j < g.Width() && g[line][j] != BlackCell; j++ {
-		g[line][j] = EmptyCell
+func (g Grid) FindColumnSegments(column int) []Segment {
+	var start int
+	for i := range g.Height() {
+		if g[i][column] != BlackCell {
+			start = i
+			break
+		}
 	}
+
+	var res []Segment
+	for i := start; i < g.Height(); i++ {
+		if g[i][column] == BlackCell {
+			if l := i - start; l > 1 {
+				res = append(res, Segment{column, start, i - start})
+			}
+			start = i + 1
+		}
+	}
+
+	if l := g.Width() - start; start < g.Width() && l > 1 {
+		res = append(res, Segment{column, start, g.Width() - start})
+	}
+
+	return res
+}
+
+func (g Grid) FindAllColumnSegments() []Segment {
+	res := g.FindColumnSegments(0)
+
+	for j := 1; j < g.Width(); j++ {
+		res = append(res, g.FindColumnSegments(j)...)
+	}
+
+	return res
 }
 
 func (g Grid) FillColumnSegment(line, column int, word string) string {
